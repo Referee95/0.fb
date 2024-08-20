@@ -12,22 +12,30 @@
 #include <vector>
 #include <map>
 
+using std::string;
+using std::cout;
+using std::cerr;
+using std::cin;
+using std::endl;
+using std::map;
+using std::vector;
+
 
 class Server {
     public:
-        Server(int, char **);
+        Server(int, string);
         ~Server();
         void run();
-        void setupserver();
+        int  setupserver(int);
         void acceptNewClient();
         void handleClientMessage(int);
         void removeclient(int);
+
     private:
-        int socketD;
-        int port;
+        
         int serverfd;
-        std::string password;
-        std::vector<struct pollfd> pollfds;
-        std::map <int , std::string> clients;
+        string password;
+        vector<struct pollfd> pollfds;
+        map <int , string> clients;
 };
         

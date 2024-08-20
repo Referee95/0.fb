@@ -1,100 +1,119 @@
 #include"Server.hpp"
 
-Server::Server(int ac, char **av){
-    if(ac != 3){
-        std::cerr << "Usage: ./server <port> <password>" << std::endl;
-        exit ;
-    }
-    port = std::atoi(av[1]);
-    password = av[2];
+Server::Server(int port, string password) : password(password) {
+   serverfd = setupserver(port);
 }
-void Server::setupserver(){
-    socketD = socket(AF_INET, SOCK_STREAM, 0);
+int   Server::setupserver(int port){
+    int socketD = socket(AF_INET, SOCK_STREAM, 0);
     if (socketD < 0){
-        std::cerr << "Failed to set up server\n";
+        cerr << "Failed to set up server\n";
         close(socketD);
-        exit;
+        exit(EXIT_FAILURE);
     }
     int opt = 1;
     if(setsockopt(socketD, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0){
-        std::cerr << "failed to setsocketopt\n";
-        exit;
+        cerr << "Failed to setsocketopt\n";
+        exit(EXIT_FAILURE);
     }
-    struct sockaddr_in ser_addr;
-    memset(&ser_addr, 0, sizeof(ser_addr));
-    ser_addr.sin_family = AF_INET;
-    ser_addr.sin_addr.s_addr = INADDR_ANY;
-    ser_addr.sin_port = htons(port);
+    struct sockaddr_in sock_add;
+    memset(&sock_add, 0, sizeof(sock_add));
+    sock_add.sin_family = AF_INET;
+    sock_add.sin_port = htons(port);
+    sock_add.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if(bind(socketD, (struct sockaddr*)&ser_addr, sizeof(ser_addr)) < 0)
+    if(bind(socketD, (struct sockaddr*)&sock_add, sizeof(sock_add)) < 0)
     {
-        std::cerr << "failed to bind\n";
+        cerr << "Failed to bind\n";
         close(socketD);
-        exit;
+        exit(EXIT_FAILURE);
     }
+    else
+        cout << "server id bind\n";
     if(listen(socketD, 5) < 0){
-        std::cerr << "failed to listen\n";
+        cerr << "Failed to listen\n";
         close(socketD);
-        exit;
+        exit(EXIT_FAILURE);
     }
-    fcntl(socketD, F_SETFL, O_NONBLOCK);
+    else 
+        cout << "server is listen\n";
     
+    cout << "Waiting for a connection..." << std::endl;
+    // fcntl(socketD, F_SETFL, O_NONBLOCK);
+    return(socketD);
 }
 void Server::run(){
+    
     while(1){
-        int pollcount = poll(&pollfds[0], pollfds.size(), 1)
+        int pollcount = poll(&pollfds[0], pollfds.size(), 1);
         if(pollcount < 0){
-            std::cerr << "failed to poll\n";
-            break;
+            cerr << "Failed to poll\n";
+            break; 
         }
     }
-    for(size_t i = 0, i < pollfds.size(), i++){
+    for(size_t i = 0; i < pollfds.size(); i++){
+        cout << "New connection for the socket :" << serverfd << endl;
         if(pollfds[i].revents & POLLIN){
             if(pollfds[i].fd == serverfd)
+            {
                 acceptNewClient();
+                cout << "New connection for the socket :" << serverfd << endl;
+            }
             else 
                 handleClientMessage(pollfds[i].fd);
         }
     }
 }
 void Server::acceptNewClient(){
-    sturct sockaddr_in client_addr;
-    socklen_t client_len = sizeof(client_addr);
+    struct sockaddr_in client_addr;
+    memset(&client_addr, 0, sizeof(client_addr));
+    socklen_t client_len = 0;
     int clientFd = accept(serverfd, (struct sockaddr*) &client_addr, &client_len);
-    if(client  < 0){
-        std::cerr << "failed to accept\n";
+    if(clientFd  < 0){
+        cerr << "Failed to accept\n";
         return;
     }
-    fcntl(clintFd, F_SETFL, O_NONBLOCK);
-    pollFds.push_back(clientFd, POLLIN, 0);
-    clients[clientFd] = "";
+    else 
+        cout << "server accept client >> " << clientFd << endl;
+    // fcntl(clientFd, F_SETFL, O_NONBLOCK);
+    // struct pollfd pfd;
+    // pfd.fd = clientFd;
+    // pfd.events = POLLIN;
+    // pfd.revents = 0;
+    // pollfds.push_back(pfd);
+    // clients[clientFd] = "";
 }
 
 void Server::handleClientMessage(int clientfd){
     char buffer[512];
+    memset(buffer, 0, sizeof(buffer));
+
     int nbytes = recv(clientfd, buffer, sizeof(buffer)- 1, 0);
     if(nbytes <= 0){
         if(nbytes == 0)
-        {
-            std::cout << "Client disconnected: " << clientfd << std::endl;
-            else{
-                std::cerr << "failed recv\n";
-            }
+            cout << "Client disconnected: " << clientfd << endl;
+        else
+                cerr << "Failed recv\n";
             removeclient(clientfd);
         }
-        else{
-            buffer[nbytes] = '\0';
-            std::string message(buffer);
-            std::cout << "Received message from client " << clientfd << ": " << message << std::endl;
-            send(clientfd, message.c_str(), message.lenth(). 0);
-        }
+    else{
+        buffer[nbytes] = '\0';
+        string message(buffer);
+        cout << "Received message from client " << clientfd << ": " << message << endl;
+        send(clientfd, message.c_str(), message.length(),0);
     }
 }
+
 void Server::removeclient(int clientfd){
-    
+    close(clientfd);
+    for(vector<struct pollfd>::iterator it = pollfds.begin(); it != pollfds.end(); it++){
+        if(it->fd == clientfd){
+            pollfds.erase(it);
+            break;
+        }
+    }
+    clients.erase(clientfd);
 }
 
-Server::~Server()
-{
+Server::~Server(){
     
 }
