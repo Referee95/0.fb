@@ -23,18 +23,19 @@ using std::vector;
 
 class Server {
     public:
-        Server(int, string);
+        Server(int, const string &);
         ~Server();
         void run();
-        int  setupserver(int);
+        void  setupserver();
         void acceptNewClient();
         void handleClientMessage(int);
         void removeclient(int);
 
     private:
         
-        int serverfd;
-        string password;
+        int socketD;
+        int _port;
+        string _password;
         vector<struct pollfd> pollfds;
         map <int , string> clients;
 };
