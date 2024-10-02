@@ -88,10 +88,52 @@ std::vector<User *> Channel::getUsers() const
 	return _users;
 }
 
+void	Channel::setInviteOnly(bool inviteOnly)
+{
+	_inviteOnly = inviteOnly;
+}
 
-/*
-** --------------------------------- ACCESSOR ---------------------------------
-*/
+void	Channel::setHasTopic(bool hasTopic)
+{
+	_hasTopic = hasTopic;
+}
+void Channel::setHasPass(bool hasPass)
+{
+	_hasPass = hasPass;
+}
+void Channel::setPass(std::string pass)
+{
+	_pass = pass;
+}
+void Channel::setTopic(std::string topic)
+{
+	_topic = topic;
+}
+std::string Channel::getTopic() const
+{
+	return _topic;
+}
+std::string Channel::getPass() const
+{
+	return _pass;
+}
 
+void Channel::setUserLimit(int limit)
+{
+	_userLimit = limit;
+}
 
-/* ************************************************************************** */
+void Channel::addAdmin(User *user)
+{
+	_admins.push_back(user);
+}
+
+void Channel::removeAdmin(User *user)
+{
+	_admins.erase(std::remove(_admins.begin(), _admins.end(), user), _admins.end());
+}
+
+std::vector <User *> Channel::getAdmin() const
+{
+	return _admins;
+}

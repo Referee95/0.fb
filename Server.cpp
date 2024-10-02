@@ -236,7 +236,7 @@ void Server::_hundleMessage(string message, int clientFd)
 
 			if (_channels.find(channelName) != _channels.end())
 			{
-				x++;
+				x++; 
 				Channel &channel = _channels[channelName];
 				vector<User *> users = channel.getUsers();
 				string msg = ":127.0.0.1 353 " + user->getNickName() + " = " + channelName + " :";
@@ -258,68 +258,87 @@ void Server::_hundleMessage(string message, int clientFd)
 				send(user->getFd(), endList.c_str(), endList.size(), 0);
 			}
 		}
-		else if (command == "INVITE"){
-			x++;
-			send(clientFd, "INVITE\r\n", 8, 0);
-		}
 		else if (command == "MODE")
 		{
 			x++;
-			string channelName , mode, reponse;
-			iss >> channelName >> mode;
-			if(mode == "+i"){
-				reponse = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "88ABE6.25BF1D.D03F86.88C9BD.IP MODE " + channelName + " +i\r\n";
-				send(clientFd, reponse.c_str(), reponse.size(), 0);
-			}
-			else if(mode == "-i"){
-				reponse = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "88ABE6.25BF1D.D03F86.88C9BD.IP MODE " + channelName + " -i\r\n";
-				send(clientFd, reponse.c_str(), reponse.size(), 0);
-			}
-			else if(mode == "+t"){
-			}
-			else if(mode == "-t"){
-			}
-			else if(mode == "+k"){
-			}
-			else if(mode == "-k"){
-			}
-			else if(mode == "+o"){
-			}
-			else if(mode == "-o"){
-			}
-			else if(mode == "+l"){
-			}
-			else if(mode == "-l"){
-			}
-			else{
-				reponse = ":127.0.0.1 324 " + user->getNickName() + " " + channelName + " +tn\r\n";
-				send(clientFd, reponse.c_str(), reponse.size(), 0);
-				reponse = ":127.0.0.1 329 " + user->getNickName() + " " + channelName + " 1726572593\r\n";
-				send(clientFd, reponse.c_str(), reponse.size(), 0);
+			string channelName , mode, argument, reponse;
+			iss >> channelName >> mode >> argument;
+			if (_channels.find(channelName) != _channels.end())
+			{
+				Channel &channel = _channels[channelName];
+				if(mode == "+i"){
+					channel.setInviteOnly(true);
+					reponse = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0.IP MODE " + channelName + " +i\r\n";
+					send(clientFd, reponse.c_str(), reponse.size(), 0);
+				}
+				else if(mode == "-i"){
+					channel.setInviteOnly(false);
+					reponse = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0.IP MODE " + channelName + " -i\r\n";
+					send(clientFd, reponse.c_str(), reponse.size(), 0);
+				}
+				else if(mode == "+t"){
+					channel.setHasTopic(true);
+					channel.setTopic(argument);
+				}
+				else if(mode == "-t"){
+					channel.setHasTopic(false);
+					channel.setTopic("");
+				}
+				else if(mode == "+k"){
+					channel.setHasPass(true);
+					channel.setPass(argument);
+				}
+				else if(mode == "-k"){
+					channel.setHasPass(false);
+					channel.setPass("");
+				}
+				else if(mode == "+o"){
+					channel.addAdmin(user);
+					cout << "admin added" << endl;
+					for(vector<User *>::iterator it = channel.getAdmin().begin() ; it != channel.getAdmin().end() ; ++it)
+					{
+						cout << "admin: " << (*it)->getNickName() << endl;
+					}
+				}
+				else if(mode == "-o"){
+					channel.removeAdmin(user);
+				}
+				else if(mode == "+l"){
+					channel.setUserLimit(atoi(argument.c_str()));
+				}
+				else if(mode == "-l"){
+					channel.setUserLimit(0);
+				}
+				else{
+					reponse = ":127.0.0.1 324 " + user->getNickName() + " " + channelName + " +tn\r\n";
+					send(clientFd, reponse.c_str(), reponse.size(), 0);
+					reponse = ":127.0.0.1 329 " + user->getNickName() + " " + channelName + " 1726572593\r\n";
+					send(clientFd, reponse.c_str(), reponse.size(), 0);
+				}
 			}
 		}
-		// else if (command == "QUIT")
-		// {
-		// 	x++;
-		// 	string msg;
-		// 	iss >> msg;
-		// 	string quitMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP QUIT :" + msg + "\r\n";
-		// 	send(clientFd, quitMsg.c_str(), quitMsg.size(), 0);
-		// 	removeclient(clientFd);
-		// }
-		// else if (command == "PART")
-		// {
-		// 	x++;
-		// 	string channelName;
-		// 	iss >> channelName;
-		// 	if (_channels.find(channelName) != _channels.end())
-		// 	{
-		// 		Channel &channel = _channels[channelName];
-		// 		channel.removeUser(user);
-		// 		string partMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP PART " + channelName + "\r\n";
-		// 		send(clientFd, partMsg.c_str(), partMsg.size(), 0);
-		// 	}
-		// }
+		else if (command == "QUIT")
+		{
+			x++;
+			string msg;
+			iss >> msg;
+			string quitMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP QUIT :" + msg + "\r\n";
+			send(clientFd, quitMsg.c_str(), quitMsg.size(), 0);
+			removeclient(clientFd);
+		}
+		else if (command == "PART")
+		{
+			x++;
+			string channelName;
+			iss >> channelName;
+			if (_channels.find(channelName) != _channels.end())
+			{
+				Channel &channel = _channels[channelName];
+				channel.removeUser(user);
+				string partMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP PART " + channelName + "\r\n";
+				send(clientFd, partMsg.c_str(), partMsg.size(), 0);
+			}
+		}
 		else if(x == 0)
 		{
 			string msg = ":127.0.0.1 421 " + user->getNickName() + " " + command + " :Unknown command\r\n";
@@ -463,3 +482,13 @@ void Server::removeclient(int clientfd)
 
 
 /* ************************************************************************** */
+
+
+// topic__ = true 
+
+
+// if topic true 
+// // rie operator liy9der ibdel
+
+// else
+// kolchu iy9der ibdel
