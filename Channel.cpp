@@ -123,6 +123,11 @@ void Channel::setUserLimit(int limit)
 	_userLimit = limit;
 }
 
+int Channel::getUserLimit() const
+{
+	return _userLimit;
+}
+
 void Channel::addAdmin(User *user)
 {
 	_admins.push_back(user);

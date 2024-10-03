@@ -26,6 +26,7 @@ class Channel
 				std::string getName() const;
 				std::vector<User *> getUsers() const;
 				void	setUserLimit(int limit);
+				int		getUserLimit() const;
 				void	addAdmin(User *user);
 				void	removeAdmin(User *user);
 				std::vector <User *> getAdmin() const;

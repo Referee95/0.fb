@@ -266,7 +266,13 @@ void Server::_hundleMessage(string message, int clientFd)
 			if (_channels.find(channelName) != _channels.end())
 			{
 				Channel &channel = _channels[channelName];
-				if(mode == "+i"){
+				if(mode.empty()){
+					reponse = ":127.0.0.1 324 " + user->getNickName() + " " + channelName + " +tn\r\n";
+					send(clientFd, reponse.c_str(), reponse.size(), 0);
+					reponse = ":127.0.0.1 329 " + user->getNickName() + " " + channelName + " 1726572593\r\n";
+					send(clientFd, reponse.c_str(), reponse.size(), 0);
+				}
+				else if(mode == "+i"){
 					channel.setInviteOnly(true);
 					reponse = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0.IP MODE " + channelName + " +i\r\n";
 					send(clientFd, reponse.c_str(), reponse.size(), 0);
@@ -305,15 +311,11 @@ void Server::_hundleMessage(string message, int clientFd)
 				}
 				else if(mode == "+l"){
 					channel.setUserLimit(atoi(argument.c_str()));
+					cout << "limit: " << channel.getUserLimit() << endl;
 				}
 				else if(mode == "-l"){
 					channel.setUserLimit(0);
-				}
-				else{
-					reponse = ":127.0.0.1 324 " + user->getNickName() + " " + channelName + " +tn\r\n";
-					send(clientFd, reponse.c_str(), reponse.size(), 0);
-					reponse = ":127.0.0.1 329 " + user->getNickName() + " " + channelName + " 1726572593\r\n";
-					send(clientFd, reponse.c_str(), reponse.size(), 0);
+					cout << "limit: " << channel.getUserLimit() << endl;
 				}
 			}
 		}
