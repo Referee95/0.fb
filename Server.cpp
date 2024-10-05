@@ -178,10 +178,22 @@ void Server::_hundleMessage(string message, int clientFd)
 				channel.addUser(user);
 				channel.addAdmin(user);
 				user->setOperator(true);
+				
 			}
 			else
 			{
 				Channel& channel = _channels[channelName];
+				if (channel.getHasPass())
+				{
+					string pass;
+					iss >> pass;
+					if (pass != channel.getPass())
+					{
+						string msg = ":0.facebook 475 " + user->getNickName() + " " + channelName + " :Cannot join channel (+k)\r\n";
+						send(clientFd, msg.c_str(), msg.size(), 0);
+						break ;
+					}
+				}
 				channel.addUser(user);
 			}
 			string joinMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP JOIN " + channelName + " * :" + user->getRealName() + "\r\n";
@@ -209,7 +221,7 @@ void Server::_hundleMessage(string message, int clientFd)
 				send(clientFd, kickMsg.c_str(), kickMsg.size(), 0);
 			}
 			else{
-				string response = ":127.0.0.1 401 " + channelName + " " +  nick + " :No such nick\r\n";
+				string response = ":0.facebook 401 " + channelName + " " +  nick + " :No such nick\r\n";
 				send(clientFd, response.c_str(), response.size(), 0);
 			}
 		}
@@ -289,48 +301,116 @@ void Server::_hundleMessage(string message, int clientFd)
 			if (_channels.find(channelName) != _channels.end())
 			{
 				Channel &channel = _channels[channelName];
-				if(mode.empty()){
+				if(mode.empty())
+				{
 					reponse = ":127.0.0.1 324 " + user->getNickName() + " " + channelName + " +tn\r\n";
 					send(clientFd, reponse.c_str(), reponse.size(), 0);
 					reponse = ":127.0.0.1 329 " + user->getNickName() + " " + channelName + " 1726572593\r\n";
 					send(clientFd, reponse.c_str(), reponse.size(), 0);
 				}
-				else if(mode == "+i"){
+				else if(mode == "+i")
+				{
 					channel.setInviteOnly(true);
+					channel.addAdmin(user);
 					reponse = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0.IP MODE " + channelName + " +i\r\n";
 					send(clientFd, reponse.c_str(), reponse.size(), 0);
 				}
 				else if(mode == "-i"){
 					channel.setInviteOnly(false);
+					channel.removeAdmin(user);
 					reponse = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0.IP MODE " + channelName + " -i\r\n";
 					send(clientFd, reponse.c_str(), reponse.size(), 0);
 				}
 				else if(mode == "+t"){
 					channel.setHasTopic(true);
 					channel.setTopic(argument);
+					reponse = ":" + user->getNickName() + "!" + user->getUserName() + "@0.0.0.0.IP MODE " + channelName + " +t\r\n";
+					send(clientFd, reponse.c_str(), reponse.size(), 0);
 				}
 				else if(mode == "-t"){
 					channel.setHasTopic(false);
 					channel.setTopic("");
+					reponse = ":" + user->getNickName() + "!" + user->getUserName() + "@0.0.0.0.IP MODE " + channelName + " -t\r\n";
+					send(clientFd, reponse.c_str(), reponse.size(), 0);
 				}
 				else if(mode == "+k"){
 					channel.setHasPass(true);
+					if (argument.empty())
+					{
+						string msg = "0.facebook 461 " + user->getNickName() + " MODE +k :Not enough parameters\r\n";
+						send(clientFd, msg.c_str(), msg.size(), 0);
+					}
 					channel.setPass(argument);
 				}
 				else if(mode == "-k"){
 					channel.setHasPass(false);
 					channel.setPass("");
 				}
-				else if(mode == "+o"){
-					channel.addAdmin(user);
-					cout << "admin added" << endl;
-					for(vector<User *>::iterator it = channel.getAdmin().begin() ; it != channel.getAdmin().end() ; ++it)
+				else if(mode == "+o")
+				{
+					if (argument.empty())
 					{
-						cout << "admin: " << (*it)->getNickName() << endl;
+						string msg = "0.facebook 461 " + user->getNickName() + " MODE +o :Not enough parameters\r\n";
+						send(clientFd, msg.c_str(), msg.size(), 0);
+					}
+					else
+					{
+						if (!user->getOperator())
+						{
+							string msg = ":0.facebook 482 " + user->getNickName() + " " + channelName + " :You're not channel operator\r\n";
+							send(user->getFd(), msg.c_str(), msg.size(), 0);
+							break;
+						}
+						else
+						{
+							User *newAdmin = findUser(argument);
+							if (newAdmin == NULL)
+							{
+								string msg = ":0.facebook 401 " + user->getNickName() + " " + argument + " :No such nick\r\n";
+								send(user->getFd(), msg.c_str(), msg.size(), 0);
+								break;
+							}
+							else
+							{
+								channel.addAdmin(newAdmin);
+								string msg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP MODE " + channelName + " +o " + argument + "\r\n";
+								send(clientFd, msg.c_str(), msg.size(), 0);
+							}
+
+						}
 					}
 				}
 				else if(mode == "-o"){
-					channel.removeAdmin(user);
+					if (argument.empty())
+					{
+						string msg = "0.facebook 461 " + user->getNickName() + " MODE -o :Not enough parameters\r\n";
+						send(clientFd, msg.c_str(), msg.size(), 0);
+					}
+					else
+					{
+						if (!user->getOperator())
+						{
+							string msg = ":0.facebook 482 " + user->getNickName() + " " + channelName + " :You're not channel operator\r\n";
+							send(user->getFd(), msg.c_str(), msg.size(), 0);
+							break;
+						}
+						else
+						{
+							User *newAdmin = findUser(argument);
+							if (newAdmin == NULL)
+							{
+								string msg = ":0.facebook 401 " + user->getNickName() + " " + argument + " :No such nick\r\n";
+								send(user->getFd(), msg.c_str(), msg.size(), 0);
+								break;
+							}
+							else
+							{
+								channel.removeAdmin(newAdmin);
+								string msg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP MODE " + channelName + " -o " + argument + "\r\n";
+								send(clientFd, msg.c_str(), msg.size(), 0);
+							}
+						}
+					}
 				}
 				else if(mode == "+l"){
 					channel.setUserLimit(atoi(argument.c_str()));
@@ -354,7 +434,7 @@ void Server::_hundleMessage(string message, int clientFd)
         		break;
 			}
 			Channel &channel = _channels[channelName];
-			if (!user->getOperator())
+			if (!user->getOperator() || !channel.getInviteOnly())
 			{
 				string msg = user->getNickName() + " " + command + " : 482 You're not channel operator\r\n";
 				send(clientFd, msg.c_str(), msg.size(), 0);
@@ -371,6 +451,31 @@ void Server::_hundleMessage(string message, int clientFd)
 			int invitedFd = invited->getFd();
 			string inviteMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP INVITE " + invitedNick + " " + channelName + "\r\n";
 			send(invitedFd, inviteMsg.c_str(), inviteMsg.size(), 0);
+		}
+		else if (command == "TOPIC")
+		{
+			x++;
+			string channelName, topic;
+			iss >> channelName;
+			if (_channels.find(channelName) == _channels.end())
+			{
+				string msg = user->getNickName() + " " + command + " : 403 No such channel\r\n";
+        		send(clientFd, msg.c_str(), msg.size(), 0);
+        		break;
+			}
+			Channel &channel = _channels[channelName];
+			if (!user->getOperator() || !channel.getHasTopic())
+			{
+				string msg = ":127.0.0.1 482 " + user->getNickName() + " " + channelName + " :You're not channel operator\r\n";
+				send(user->getFd(), msg.c_str(), msg.size(), 0);
+				break;
+			}
+			std::getline(iss, topic);
+			if (topic[0] == ' ' && topic[1] == ':')
+				topic = topic.substr(2);
+			channel.setTopic(topic);
+			string msg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP TOPIC " + channelName + " :" + topic + "\r\n";
+			send(clientFd, msg.c_str(), msg.size(), 0);
 		}
 		else if (command == "QUIT")
 		{

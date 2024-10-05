@@ -30,6 +30,8 @@ class User
 		bool getSigned() const;
 		bool getNick() const;
 		bool getUser() const;
+		bool getTopicFlag() const;
+		void setTopicFlag(bool topicFlag);
 		string getRealName() const;
 
 		// 
@@ -56,6 +58,7 @@ class User
 		bool _signed;
 		bool _nick;
 		bool _user;
+		bool _topicFlag;
 	
 
 };

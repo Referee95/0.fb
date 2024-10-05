@@ -147,3 +147,20 @@ void Channel::addInvited(User *user)
 {
 	_invited.push_back(user);
 }
+
+bool Channel::getInviteOnly() const
+{
+	return _inviteOnly;
+}
+
+bool Channel::getHasTopic() const
+{
+	return _hasTopic;
+}
+
+bool Channel::getHasPass() const
+{
+	return _hasPass;
+}
+
+/* ************************************************************************** */

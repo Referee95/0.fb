@@ -144,6 +144,17 @@ void User::setRealName(const string &realName)
 	_realName = realName;
 }
 
+bool User::getTopicFlag() const
+{
+	return _topicFlag;
+}
+
+void User::setTopicFlag(bool topicFlag)
+{
+	_topicFlag = topicFlag;
+}
+
+
 
 // added by me
 // int 		User::get_socket()

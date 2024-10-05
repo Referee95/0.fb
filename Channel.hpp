@@ -16,13 +16,15 @@ class Channel
 				Channel( Channel const & src );
 				void	addUser( User *user);
 				void	removeUser(const User *user);
-				void	setInviteOnly(bool inviteOnly);
-				void	setHasTopic(bool hasTopic);
 				void 	setHasPass(bool hasPass);
 				void 	setPass(std::string pass);
 				void 	setTopic(std::string topic);
 				string	getTopic() const;
 				string	getPass() const;
+				bool	getInviteOnly() const;
+				void 	setInviteOnly(bool inviteOnly);
+				bool	getHasTopic() const;
+				void 	setHasTopic(bool hasTopic);
 				std::string getName() const;
 				std::vector<User *> getUsers() const;
 				void	setUserLimit(int limit);
@@ -31,6 +33,7 @@ class Channel
 				void	removeAdmin(User *user);
 				std::vector <User *> getAdmin() const;
 				void	addInvited(User *user);
+				bool	getHasPass() const;
 
 				~Channel();
 
