@@ -60,6 +60,19 @@ std::ostream &			operator<<( std::ostream & o, Server const & i )
 */
 
 
+User *Server::findUser(string &name)
+{
+	map<int, User *>::iterator it = _users.begin();
+	while (it != _users.end())
+	{
+		User *user = it->second;
+		if (user->getNickName() == name)
+			return user;
+		++it;
+	}
+	return NULL;
+}
+
 void	Server::start(string port, string password)
 {
 	std::cout << "Server started" << std::endl;
@@ -157,15 +170,25 @@ void Server::_hundleMessage(string message, int clientFd)
 				send(clientFd, msg.c_str(), msg.size(), 0);
 				break ;
 			}
-			_channels[channelName] = Channel(channelName);
-			bool op = (_channels.find(channelName) == _channels.end());
-
-			Channel& channel = _channels[channelName];
-			channel.addUser(user);
+			bool newChannel = (_channels.find(channelName) == _channels.end());
+			if (newChannel)
+			{
+				_channels[channelName] = Channel(channelName);
+				Channel& channel = _channels[channelName];
+				channel.addUser(user);
+				channel.addAdmin(user);
+				user->setOperator(true);
+			}
+			else
+			{
+				Channel& channel = _channels[channelName];
+				channel.addUser(user);
+			}
 			string joinMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP JOIN " + channelName + " * :" + user->getRealName() + "\r\n";
 			send(clientFd, joinMsg.c_str(), joinMsg.size(), 0);
 		}
-		else if(command == "KICK"){
+		else if(command == "KICK")
+		{
 			string skip, channelName, nick;
 			x++;
 			std::stringstream iss(message);
@@ -266,7 +289,8 @@ void Server::_hundleMessage(string message, int clientFd)
 			if (_channels.find(channelName) != _channels.end())
 			{
 				Channel &channel = _channels[channelName];
-				if(mode == "+i"){
+				if(mode == "+i")
+				{
 					channel.setInviteOnly(true);
 					reponse = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0.IP MODE " + channelName + " +i\r\n";
 					send(clientFd, reponse.c_str(), reponse.size(), 0);
@@ -317,6 +341,36 @@ void Server::_hundleMessage(string message, int clientFd)
 				}
 			}
 		}
+		else if (command == "INVITE")
+		{
+			x++;
+			string channelName, invitedNick;
+			iss >> invitedNick >> channelName;
+			if (_channels.find(channelName) == _channels.end())
+			{
+				string msg = user->getNickName() + " " + command + " : 403 No such channel\r\n";
+        		send(clientFd, msg.c_str(), msg.size(), 0);
+        		break;
+			}
+			Channel &channel = _channels[channelName];
+			if (!user->getOperator())
+			{
+				string msg = user->getNickName() + " " + command + " : 482 You're not channel operator\r\n";
+				send(clientFd, msg.c_str(), msg.size(), 0);
+				break;
+			}
+			User *invited = findUser(invitedNick);
+			if (invited == NULL)
+			{
+				string msg = user->getNickName() + " " + command + " : 401 No such nick\r\n";
+				send(clientFd, msg.c_str(), msg.size(), 0);
+				break;
+			}
+			channel.addInvited(invited);
+			int invitedFd = invited->getFd();
+			string inviteMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP INVITE " + invitedNick + " " + channelName + "\r\n";
+			send(invitedFd, inviteMsg.c_str(), inviteMsg.size(), 0);
+		}
 		else if (command == "QUIT")
 		{
 			x++;
@@ -346,7 +400,6 @@ void Server::_hundleMessage(string message, int clientFd)
 			send(clientFd, msg.c_str(), msg.size(), 0);
 			return ;
 		}
-		
 	}
 
 

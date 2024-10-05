@@ -29,8 +29,7 @@ class Channel
 				void	addAdmin(User *user);
 				void	removeAdmin(User *user);
 				std::vector <User *> getAdmin() const;
-
-				
+				void	addInvited(User *user);
 
 				~Channel();
 

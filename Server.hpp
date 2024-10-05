@@ -66,7 +66,7 @@ class Server
 		// void	join(User &sender, std::string buffer);
 		int	send_msg(int dest_fd, std::string msg);
 		Channel*	find_channel(std::string name);
-		User*	find_user(std::string name);
+		User*	findUser(std::string &name);
 
 		//////////////
 

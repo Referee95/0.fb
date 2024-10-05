@@ -137,3 +137,8 @@ std::vector <User *> Channel::getAdmin() const
 {
 	return _admins;
 }
+
+void Channel::addInvited(User *user)
+{
+	_invited.push_back(user);
+}
