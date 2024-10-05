@@ -53,7 +53,7 @@ class Channel
 				bool _hasPass;
 				string _topic;
 				string _pass;
-				int _userLimit;
+				size_t _userLimit;
 
 				
 

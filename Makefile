@@ -1,7 +1,7 @@
 Name = ircserv
 
 CC = c++
-# CPPFLAGS = -Wall -Wextra -Werror -std=c++98
+CPPFLAGS = -Wall -Wextra -Werror -std=c++98
 SRC = Server.cpp main.cpp User.cpp Channel.cpp
 
 OBJ = $(SRC:.cpp=.o)

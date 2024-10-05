@@ -9,12 +9,13 @@ Server::Server()
 	
 }
 
-Server::Server(int port, const string &password) : _port(port), _password(password), socketD(-1)
+Server::Server(int port, const string &password) : _port(port), _password(password)
 {
 }
 
 Server::Server( const Server & src )
 {
+	*this = src;
 }
 
 
@@ -49,7 +50,7 @@ Server &				Server::operator=( Server const & rhs )
 	return *this;
 }
 
-std::ostream &			operator<<( std::ostream & o, Server const & i )
+std::ostream &			operator<<( std::ostream & o, Server const & __unused i )
 {
 	return o;
 }
@@ -194,7 +195,7 @@ void Server::_hundleMessage(string message, int clientFd)
 						break ;
 					}
 				}
-				if (channel.getUserLimit() != 0 && channel.getUsers().size() >= channel.getUserLimit())
+				if (channel.getUserLimit() != 0 && (int)channel.getUsers().size() >= channel.getUserLimit())
 				{
 					channel.setHasPass(true);
 					string msg = ":0.facebook 471 " + user->getNickName() + " " + channelName + " :Cannot join channel (+l)\r\n";

@@ -37,16 +37,24 @@ Channel::~Channel()
 
 Channel &				Channel::operator=( Channel const & rhs )
 {
-	//if ( this != &rhs )
-	//{
-		//this->_value = rhs.getValue();
-	//}
+	if ( this != &rhs )
+	{
+		this->_users = rhs.getUsers();
+		this->_invited = rhs._invited;
+		this->_admins = rhs._admins;
+		this->_name = rhs.getName();
+		this->_inviteOnly = rhs.getInviteOnly();
+		this->_hasTopic = rhs.getHasTopic();
+		this->_hasPass = rhs.getHasPass();
+		this->_topic = rhs.getTopic();
+		this->_pass = rhs.getPass();
+		this->_userLimit = rhs.getUserLimit();
+	}
 	return *this;
 }
 
-std::ostream &			operator<<( std::ostream & o, Channel const & i )
+std::ostream &			operator<<( std::ostream & o, Channel const & __unused i )
 {
-	//o << "Value = " << i.getValue();
 	return o;
 }
 

@@ -4,8 +4,7 @@
 ** ------------------------------- CONSTRUCTOR --------------------------------
 */
 
-User::User() : _fd(0) , _userName("user"), _nickName("nick"), _ipAdresse("0.0.0.0"), _operators(false), _signed(false), _nick(false), _user(false) 
-
+User::User()
 {
 }
 
@@ -42,7 +41,7 @@ User &				User::operator=( User const & rhs )
 	return *this;
 }
 
-std::ostream &			operator<<( std::ostream & o, User const & i )
+std::ostream &			operator<<( std::ostream & o, User const & __unused i )
 {
 	//o << "Value = " << i.getValue();
 	return o;
