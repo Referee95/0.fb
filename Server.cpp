@@ -194,6 +194,13 @@ void Server::_hundleMessage(string message, int clientFd)
 						break ;
 					}
 				}
+				if (channel.getUserLimit() != 0 && channel.getUsers().size() >= channel.getUserLimit())
+				{
+					channel.setHasPass(true);
+					string msg = ":0.facebook 471 " + user->getNickName() + " " + channelName + " :Cannot join channel (+l)\r\n";
+					send(clientFd, msg.c_str(), msg.size(), 0);
+					break ;
+				}
 				channel.addUser(user);
 			}
 			string joinMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP JOIN " + channelName + " * :" + user->getRealName() + "\r\n";
@@ -412,12 +419,35 @@ void Server::_hundleMessage(string message, int clientFd)
 						}
 					}
 				}
-				else if(mode == "+l"){
-					channel.setUserLimit(atoi(argument.c_str()));
-					cout << "limit: " << channel.getUserLimit() << endl;
+				else if(mode == "+l")
+				{
+					if (argument.empty())
+					{
+						string msg = "0.facebook 461 " + user->getNickName() + " MODE +l :Not enough parameters\r\n";
+						send(clientFd, msg.c_str(), msg.size(), 0);
+					}
+					else
+					{
+						if (!user->getOperator())
+						{
+							string msg = ":0.facebook 482 " + user->getNickName() + " " + channelName + " :You're not channel operator\r\n";
+							send(user->getFd(), msg.c_str(), msg.size(), 0);
+							break;
+						}
+						else
+						{
+							channel.setUserLimit(atoi(argument.c_str()));
+							string msg = ":" + user->getNickName() + "!" + user->getUserName() + "@0.0.0.0.IP MODE " + channelName + " +l " + argument + "\r\n";
+							send(clientFd, msg.c_str(), msg.size(), 0);
+						}
+					}
+					// channel.setUserLimit(atoi(argument.c_str()));
+					// cout << "limit: " << channel.getUserLimit() << endl;
 				}
-				else if(mode == "-l"){
+				else if(mode == "-l")
+				{
 					channel.setUserLimit(0);
+					string msg = ":" + user->getNickName() + "!" + user->getUserName() + "@0.0.0.0.IP MODE " + channelName + " -l\r\n";
 					cout << "limit: " << channel.getUserLimit() << endl;
 				}
 			}
