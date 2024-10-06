@@ -39,14 +39,12 @@ class Server
 {
 
 	public:
-	//  added by 7akam
 	    Server(int, const string &);
 		void run();
 		void  setupserver();
 		void acceptNewClient();
 		void handleClientMessage(int);
 		void removeclient(int);	
-		// void check_buffer(string, int);
 
 		std::vector<User>		user;
 		std::vector<Channel>	channels;
@@ -57,35 +55,14 @@ class Server
 		void start(string port, string password);
 
 		Server &		operator=( Server const & rhs );	
-		void 	kick(User &sender, std::string buffer);
-		void	send_err(int code, User &sender, std::string arg1, std::string msg);
-
-		// mayache added // Commands 
-		// void kick(User &sender, std::string buffer);
-		// void	join(User &sender, std::string buffer);
-		int	send_msg(int dest_fd, std::string msg);
-		Channel*	find_channel(std::string name);
 		User*	findUser(std::string &name);
-
-
-		
-		// void setServerName(const std::string& name) {
-		// 	Server_name = name;
-		// }
-
-		// void setIP(const std::string& ip) {
-		// 	IP = ip;
-		// }
-		
 
 	private:
 
-	// added by 7akam
 		int socketD;
 		int _port;
 		vector<struct pollfd> pollfds;
 
-		bool _topicFlag;
 		fd_set _masterSet;
 		fd_set _readSet;
 		map<int, User *> _users;

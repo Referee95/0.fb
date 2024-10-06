@@ -9,6 +9,7 @@
 
 Channel::Channel()
 {
+	this->setUserLimit(0);
 }
 
 Channel::Channel(const std::string &name) : _name(name)

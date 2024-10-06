@@ -6,7 +6,6 @@
 
 Server::Server()
 {
-	
 }
 
 Server::Server(int port, const string &password) : _port(port), _password(password)
@@ -90,11 +89,8 @@ void Server::_hundleMessage(string message, int clientFd)
 	User *user;
 	user = _users[clientFd];
 	int x = 0;
-	// cout << "message: " << message << endl;
 	while (iss >> command)
 	{
-		// cout << "command: " << command << endl;
-		// cout << x << endl;
 		if (command == "CAP" || command == "LS"){
 			x++;
 			continue ;
@@ -108,7 +104,7 @@ void Server::_hundleMessage(string message, int clientFd)
 			{
 				std::stringstream ss;
 				ss << user->getFd();
-				string response = ss.str() + ": 464 The password is incorrect\r\n";
+				string response = ss.str() + ": 464 Password incorrect\r\n";
 				send(clientFd, response.c_str(), response.size(), 0);
 				break ;
 			}
@@ -159,7 +155,7 @@ void Server::_hundleMessage(string message, int clientFd)
 			x++;
 			if (user->getSigned() == false || user->getNick() == false || user->getUser() == false)
 			{
-				string msg = user->getNickName() + " " + command + " : 451 You have not registered\r\n";
+				string msg = ":0.facebook 451 " + user->getNickName() + " JOIN :You have not registered\r\n";
 				send(clientFd, msg.c_str(), msg.size(), 0);
 				break ;
 			}
@@ -167,7 +163,7 @@ void Server::_hundleMessage(string message, int clientFd)
 			iss >> channelName;
 			if (channelName[0] != '#')
 			{
-				string msg = user->getNickName() + " " + command + " : 403 Invalid channel name\r\n";
+				string msg = ":0.facebook 403 " + user->getNickName() + " " + channelName + " :No such channel\r\n";
 				send(clientFd, msg.c_str(), msg.size(), 0);
 				break ;
 			}
@@ -178,8 +174,8 @@ void Server::_hundleMessage(string message, int clientFd)
 				Channel& channel = _channels[channelName];
 				channel.addUser(user);
 				channel.addAdmin(user);
+				channel.setUserLimit(0);
 				user->setOperator(true);
-				
 			}
 			else
 			{
@@ -204,8 +200,13 @@ void Server::_hundleMessage(string message, int clientFd)
 				}
 				channel.addUser(user);
 			}
-			string joinMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP JOIN " + channelName + " * :" + user->getRealName() + "\r\n";
-			send(clientFd, joinMsg.c_str(), joinMsg.size(), 0);
+			string joinMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0" + ".IP JOIN " + channelName + " * :" + user->getRealName() + "\r\n";
+			vector<User *> users = _channels[channelName].getUsers();
+			for (vector<User *>::iterator it = users.begin(); it != users.end(); it++)
+			{
+				User *user = *it;
+				send(user->getFd(), joinMsg.c_str(), joinMsg.size(), 0);
+			}
 		}
 		else if(command == "KICK")
 		{
@@ -225,7 +226,7 @@ void Server::_hundleMessage(string message, int clientFd)
 			}
 			if (check){
 				chan.removeUser(*it);
-				string kickMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP KICK " + channelName + " " + nick + "\r\n";
+				string kickMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0" + ".IP KICK " + channelName + " " + nick + "\r\n";
 				send(clientFd, kickMsg.c_str(), kickMsg.size(), 0);
 			}
 			else{
@@ -250,7 +251,7 @@ void Server::_hundleMessage(string message, int clientFd)
 					for (vector<User *>::iterator it = users.begin();  it != users.end(); it++)
 					{
 						User *user = *it;
-						string message = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP PRIVMSG " + recipent + " " + msg.substr(1) + "\r\n";
+						string message = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0" + ".IP PRIVMSG " + recipent + " " + msg.substr(1) + "\r\n";
 						send(user->getFd(), message.c_str(), message.size(), 0);
 					}
 				}
@@ -265,7 +266,7 @@ void Server::_hundleMessage(string message, int clientFd)
 					{
 						string message;
 						iss >> message;
-						string prvMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP PRIVMSG " + recipent + " " +  message + "\r\n";
+						string prvMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0" + ".IP PRIVMSG " + recipent + " " +  message + "\r\n";
 						send(use->getFd(), prvMsg.c_str(), prvMsg.size(), 0);
 					}
 					++it;
@@ -276,30 +277,41 @@ void Server::_hundleMessage(string message, int clientFd)
 		{
 			string channelName;
 			iss >> channelName;
-
 			if (_channels.find(channelName) != _channels.end())
 			{
-				x++; 
+				x++;
 				Channel &channel = _channels[channelName];
 				vector<User *> users = channel.getUsers();
-				string msg = ":127.0.0.1 353 " + user->getNickName() + " = " + channelName + " :";
 				for(vector<User *>::iterator it = users.begin() ; it != users.end() ; ++it)
 				{
-					User *use = *it;
-					msg = msg + use->getNickName() + " ";
+					User *userr = *it;
+					if (userr->getOperator())
+					{
+						string msg2 = ":0.Facebook 352 " + user->getNickName() + " " + channelName + " " + userr->getUserName() + " 0.0.0.0.IP *.0.Facebook.org " + userr->getNickName() + " H@x :0 realname\r\n";
+						send(user->getFd(), msg2.c_str(), msg2.size(), 0);
+					}
+					else
+					{
+						string msg = ":0.Facebook 352 " + user->getNickName() + " " + channelName + " " + userr->getUserName() + " 0.0.0.0.IP *.0.Facebook.org " + userr->getNickName() + " Hx :0 realname\r\n";
+						send(user->getFd(), msg.c_str(), msg.size(), 0);
+					}
 				}
-				msg = msg + "\r\n";
-				send(user->getFd(), msg.c_str(), msg.size(), 0);
-				for(vector<User *>::iterator it = users.begin() ; it != users.end() ; ++it)
-				{
-					User *use = *it;
-					string sendNickName = ":127.0.0.1 354 " + user->getNickName() + " 152 " + channelName + " " + use->getNickName() + " " + use->getIpAdresse() + ".IP * .127.0.0.1";
-
-				}
-				string endList;
-				endList = ":127.0.0.1 315 " + user->getNickName() + " " + channelName + " :End of /WHO list.\r\n";
+				string endList = ":0.Facebook 315 " + user->getNickName() + " " + channelName + " :End of /WHO list.\r\n";
 				send(user->getFd(), endList.c_str(), endList.size(), 0);
 			}
+			string namesList = ":0.Facebook 353 " + user->getNickName() + " = " + channelName + " :";
+			vector<User *> usersnames = _channels[channelName].getUsers();
+			for (vector<User *>::iterator it = usersnames.begin(); it != usersnames.end(); it++)
+			{
+				if ((*it)->getOperator())
+					namesList += "@" + (*it)->getNickName() + " ";
+				else
+					namesList += (*it)->getNickName() + " ";
+			}
+			namesList += "\r\n";
+			send(clientFd, namesList.c_str(), namesList.size(), 0);
+			string endList = ":0.Facebook 366 " + user->getNickName() + " " + channelName + " :End of /NAMES list.\r\n";
+			send(clientFd, endList.c_str(), endList.size(), 0);
 		}
 		else if (command == "MODE")
 		{
@@ -311,9 +323,9 @@ void Server::_hundleMessage(string message, int clientFd)
 				Channel &channel = _channels[channelName];
 				if(mode.empty())
 				{
-					reponse = ":127.0.0.1 324 " + user->getNickName() + " " + channelName + " +tn\r\n";
+					reponse = ":0.Facebook 324 " + user->getNickName() + " " + channelName + " +tn\r\n";
 					send(clientFd, reponse.c_str(), reponse.size(), 0);
-					reponse = ":127.0.0.1 329 " + user->getNickName() + " " + channelName + " 1726572593\r\n";
+					reponse = ":0.Facebook 329 " + user->getNickName() + " " + channelName + " 1726572593\r\n";
 					send(clientFd, reponse.c_str(), reponse.size(), 0);
 				}
 				else if(mode == "+i")
@@ -381,7 +393,7 @@ void Server::_hundleMessage(string message, int clientFd)
 							else
 							{
 								channel.addAdmin(newAdmin);
-								string msg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP MODE " + channelName + " +o " + argument + "\r\n";
+								string msg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0" + ".IP MODE " + channelName + " +o " + argument + "\r\n";
 								send(clientFd, msg.c_str(), msg.size(), 0);
 							}
 
@@ -414,7 +426,7 @@ void Server::_hundleMessage(string message, int clientFd)
 							else
 							{
 								channel.removeAdmin(newAdmin);
-								string msg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP MODE " + channelName + " -o " + argument + "\r\n";
+								string msg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0" + ".IP MODE " + channelName + " -o " + argument + "\r\n";
 								send(clientFd, msg.c_str(), msg.size(), 0);
 							}
 						}
@@ -442,8 +454,7 @@ void Server::_hundleMessage(string message, int clientFd)
 							send(clientFd, msg.c_str(), msg.size(), 0);
 						}
 					}
-					// channel.setUserLimit(atoi(argument.c_str()));
-					// cout << "limit: " << channel.getUserLimit() << endl;
+
 				}
 				else if(mode == "-l")
 				{
@@ -480,7 +491,7 @@ void Server::_hundleMessage(string message, int clientFd)
 			}
 			channel.addInvited(invited);
 			int invitedFd = invited->getFd();
-			string inviteMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP INVITE " + invitedNick + " " + channelName + "\r\n";
+			string inviteMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0" + ".IP INVITE " + invitedNick + " " + channelName + "\r\n";
 			send(invitedFd, inviteMsg.c_str(), inviteMsg.size(), 0);
 		}
 		else if (command == "TOPIC")
@@ -497,7 +508,7 @@ void Server::_hundleMessage(string message, int clientFd)
 			Channel &channel = _channels[channelName];
 			if (!user->getOperator() || !channel.getHasTopic())
 			{
-				string msg = ":127.0.0.1 482 " + user->getNickName() + " " + channelName + " :You're not channel operator\r\n";
+				string msg = ":0.Facebook 482 " + user->getNickName() + " " + channelName + " :You're not channel operator\r\n";
 				send(user->getFd(), msg.c_str(), msg.size(), 0);
 				break;
 			}
@@ -505,7 +516,7 @@ void Server::_hundleMessage(string message, int clientFd)
 			if (topic[0] == ' ' && topic[1] == ':')
 				topic = topic.substr(2);
 			channel.setTopic(topic);
-			string msg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP TOPIC " + channelName + " :" + topic + "\r\n";
+			string msg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0" + ".IP TOPIC " + channelName + " :" + topic + "\r\n";
 			send(clientFd, msg.c_str(), msg.size(), 0);
 		}
 		else if (command == "QUIT")
@@ -513,7 +524,7 @@ void Server::_hundleMessage(string message, int clientFd)
 			x++;
 			string msg;
 			iss >> msg;
-			string quitMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP QUIT :" + msg + "\r\n";
+			string quitMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0" + ".IP QUIT :" + msg + "\r\n";
 			send(clientFd, quitMsg.c_str(), quitMsg.size(), 0);
 			removeclient(clientFd);
 		}
@@ -526,13 +537,13 @@ void Server::_hundleMessage(string message, int clientFd)
 			{
 				Channel &channel = _channels[channelName];
 				channel.removeUser(user);
-				string partMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + user->getIpAdresse() + ".IP PART " + channelName + "\r\n";
+				string partMsg = ":" + user->getNickName() + "!" + user->getUserName() + "@" + "0.0.0.0" + ".IP PART " + channelName + "\r\n";
 				send(clientFd, partMsg.c_str(), partMsg.size(), 0);
 			}
 		}
 		else if(x == 0)
 		{
-			string msg = ":127.0.0.1 421 " + user->getNickName() + " " + command + " :Unknown command\r\n";
+			string msg = ":0.Facebook 421 " + user->getNickName() + " " + command + " :Unknown command\r\n";
 			cout << msg << endl;
 			send(clientFd, msg.c_str(), msg.size(), 0);
 			return ;
@@ -540,13 +551,6 @@ void Server::_hundleMessage(string message, int clientFd)
 	}
 
 
-	// // if (command == "kick")
-	// // {
-	// 	std::string namekicker = "John";
-	// 	std::string kickmssg = ":"  "mayache- KICK " + channelName + " " + namekicker + "\r\n";
-	// 	kick(*user, kickmssg);
-	// 	 // :WiZ!jto@tolsun.oulu.fi KICK #Finnish John
-	// // }
 }
 
 
@@ -561,69 +565,69 @@ void _checkRegistredUser()
 
 void   Server::setupserver()
 {
-    socketD = socket(AF_INET, SOCK_STREAM, 0);
-    if (socketD < 0){
-        cerr << "Failed to set up server\n";
-        close(socketD);
-        exit(EXIT_FAILURE);
-    }
-    int opt = 1;
-    if(setsockopt(socketD, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0){
-        cerr << "Failed to setsocketopt\n";
-        exit(EXIT_FAILURE);
-    }
-    struct sockaddr_in sock_add;
-    memset(&sock_add, 0, sizeof(sock_add));
-    sock_add.sin_family = AF_INET;
-    sock_add.sin_port = htons(_port);
-    sock_add.sin_addr.s_addr = htonl(INADDR_ANY);
+	socketD = socket(AF_INET, SOCK_STREAM, 0);
+	if (socketD < 0){
+		cerr << "Failed to set up server\n";
+		close(socketD);
+		exit(EXIT_FAILURE);
+	}
+	int opt = 1;
+	if(setsockopt(socketD, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0){
+		cerr << "Failed to setsocketopt\n";
+		exit(EXIT_FAILURE);
+	}
+	struct sockaddr_in sock_add;
+	memset(&sock_add, 0, sizeof(sock_add));
+	sock_add.sin_family = AF_INET;
+	sock_add.sin_port = htons(_port);
+	sock_add.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if(bind(socketD, (struct sockaddr*)&sock_add, sizeof(sock_add)) < 0)
-    {
-        cerr << "Failed to bind\n";
-        close(socketD);
-        exit(EXIT_FAILURE);
-    }
-    else
-        cout << "server is bind\n";
-    if(listen(socketD, 5) < 0){
-        cerr << "Failed to listen\n";
-        close(socketD);
-        exit(EXIT_FAILURE);
-    }
-    else 
-        cout << "server is listen\n";
-    
-    fcntl(socketD, F_SETFL, O_NONBLOCK);
+	if(bind(socketD, (struct sockaddr*)&sock_add, sizeof(sock_add)) < 0)
+	{
+		cerr << "Failed to bind\n";
+		close(socketD);
+		exit(EXIT_FAILURE);
+	}
+	else
+		cout << "server is bind\n";
+	if(listen(socketD, 5) < 0){
+		cerr << "Failed to listen\n";
+		close(socketD);
+		exit(EXIT_FAILURE);
+	}
+	else 
+		cout << "server is listen\n";
+		
+	fcntl(socketD, F_SETFL, O_NONBLOCK);
 
-    struct pollfd serverpfd;
-    serverpfd.fd = socketD;
-    serverpfd.events = POLLIN;
-    pollfds.push_back(serverpfd);
-    cout << "Waiting for a connection..." << std::endl;
+	struct pollfd serverpfd;
+	serverpfd.fd = socketD;
+	serverpfd.events = POLLIN;
+	pollfds.push_back(serverpfd);
+	cout << "Waiting for a connection..." << std::endl;
 }
 void Server::run()
 {
-    setupserver();
-    while(1){
-        int pollcount = poll(&pollfds[0], pollfds.size(), -1);
-        if(pollcount < 0){
-            cerr << "Failed to poll\n";
-            break; 
-        }
-        for(size_t i = 0; i < pollfds.size(); i++){
-            if(pollfds[i].revents & POLLIN){
-                if(pollfds[i].fd == socketD)
-                    acceptNewClient();
-                else 
-                    handleClientMessage(pollfds[i].fd);
-            }
-        }
-    }
+	setupserver();
+	while(1){
+		int pollcount = poll(&pollfds[0], pollfds.size(), -1);
+		if(pollcount < 0){
+			cerr << "Failed to poll\n";
+			break; 
+		}
+		for(size_t i = 0; i < pollfds.size(); i++){
+			if(pollfds[i].revents & POLLIN){
+				if(pollfds[i].fd == socketD)
+					acceptNewClient();
+				else 
+					handleClientMessage(pollfds[i].fd);
+			}
+		}
+	}
 }
 
 void Server::acceptNewClient(){
-    struct sockaddr_in client_addr;
+	struct sockaddr_in client_addr;
     memset(&client_addr, 0, sizeof(client_addr));
     socklen_t client_len = 0;
     int clientFd = accept(socketD, (struct sockaddr*) &client_addr, &client_len);
@@ -672,13 +676,3 @@ void Server::removeclient(int clientfd)
 
 
 /* ************************************************************************** */
-
-
-// topic__ = true 
-
-
-// if topic true 
-// // rie operator liy9der ibdel
-
-// else
-// kolchu iy9der ibdel
