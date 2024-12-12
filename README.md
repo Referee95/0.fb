@@ -11,8 +11,7 @@
     <p>ft_irc is a project where you'll build an IRC server in C++. The server should support multiple clients, allow for authentication, setting a nickname, a username, joining a channel, and sending/receiving private messages.</p>
     <h2 id="installation">Installation</h2>
     <ol>
-        <li>Clone the repository: <pre><code>git clone https://github.com/lpincoli/FT_IRC42.git</code></pre></li>
-        <li>Move to the project's directory: <pre><code>cd FT_IRC42</code></pre></li>
+        <li>Clone the repository: <pre><code>git clone https://github.com/Referee95/0.fb</code></pre></li>
         <li>Compile the project: <pre><code>make</code></pre></li>
     </ol>
     <h2 id="usage">Usage</h2>
