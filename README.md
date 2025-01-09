@@ -1,6 +1,8 @@
 <body>
     <h1>Ft_IRC</h1>
     <p>ft_irc is a project where you create your own Internet Relay Chat (IRC) server. This is a remarkable opportunity to learn about network protocols, non-blocking I/O operations, and low-level programming in C++.</p>
+    - Collaborators
+	This project must be done by two students so, I would welcome this article by thanking my peer [Nouman elallaoui](https://github.com/Nellaoui) since he was my collaborator throughout this project
     <h2>Table of Contents</h2>
     <ol>
         <li><a href="#about">About</a></li>
